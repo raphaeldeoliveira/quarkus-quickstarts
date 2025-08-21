@@ -1,22 +1,15 @@
 pipeline {
     agent any
+    parameters {
+        choice(name: 'AMBIENTE_ALVO', choices: ['des', 'prd'], description: 'Selecione o ambiente de deploy')
+    }
     stages {
         stage('Executar Pipeline Completa') {
             steps {
                 script {
-                    def ambiente = ''
-                    if (env.BRANCH_NAME == 'main') {
-                        ambiente = 'prd'
-                    } else if (env.BRANCH_NAME == 'dev') {
-                        ambiente = 'des'
-                    } else {
-                        echo "Branch ${env.BRANCH_NAME} não tem pipeline configurada. Ignorando."
-                        return
-                    }
-
-                    echo "Iniciando a pipeline para o ambiente: ${ambiente}"
+                    echo "Iniciando a pipeline para o ambiente: ${params.AMBIENTE_ALVO}"
                     dir('getting-started') {
-                        sh "./pipeline.sh ${ambiente}"
+                        sh "./pipeline.sh ${params.AMBIENTE_ALVO}"
                     }
                 }
             }

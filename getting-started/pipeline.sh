@@ -8,29 +8,30 @@ ENVIRONMENT=$1
 
 APP_NAME="getting-started"
 DOCKER_USER="raphaelcarvalho30"
+APP_VERSION="1.0.0-SNAPSHOT" # Fixamos a versao para este exemplo
 
-# --- 1. CONFIGURAÇÃO INICIAL (feita uma vez no começo) ---
 echo "=================================================="
 echo "          INICIANDO PIPELINE DE CI/CD             "
 echo "        Ambiente Alvo: $ENVIRONMENT                "
 echo "=================================================="
 
-# --- 2. OBTER A VERSÃO DA APLICAÇÃO ---
-echo "Passo 1: Lendo a versão do pom.xml..."
-APP_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
-echo "Versão da aplicação encontrada: $APP_VERSION"
+# O Jenkins já fez o clone, então não precisamos clonar de novo.
 
-# --- 3. COMPILAR APLICAÇÃO ---
-echo "Passo 2: Compilando a aplicaçao Quarkus..."
+# --- 1. COMPILAR APLICAÇÃO ---
+echo "Passo 1: Compilando a aplicaçao Quarkus..."
 ./mvnw clean package
 
-# --- 4. CONSTRUIR A IMAGEM DOCKER ---
-echo "Passo 3: Construindo a imagem Docker..."
+# --- 2. CONSTRUIR A IMAGEM DOCKER ---
+echo "Passo 2: Compilando e construindo a imagem Docker..."
 docker build -t "$DOCKER_USER/$APP_NAME:$APP_VERSION" .
 docker tag "$DOCKER_USER/$APP_NAME:$APP_VERSION" "$DOCKER_USER/$APP_NAME:latest"
 echo "Imagem Docker '$DOCKER_USER/$APP_NAME' construída e tagueada com sucesso."
 
-# --- 5. IMPLANTAR NO AMBIENTE ---
+# --- 3. EXECUTAR TESTES UNITÁRIOS ---
+echo "Passo 3: Executando testes unitários..."
+./mvnw test
+
+# --- 4. IMPLANTAR NO AMBIENTE ---
 echo "Passo 4: Implantando no ambiente $ENVIRONMENT..."
 minikube kubectl -- create namespace "$ENVIRONMENT" || true
 minikube kubectl -- apply -f "./kubernetes/$ENVIRONMENT/deployment.yaml"
@@ -40,12 +41,17 @@ echo "Aguardando o Deployment 'getting-started-$ENVIRONMENT' ficar pronto..."
 minikube kubectl -- rollout status deployment/"$APP_NAME"-"$ENVIRONMENT" --namespace="$ENVIRONMENT"
 echo "Implantação no ambiente $ENVIRONMENT concluída com sucesso!"
 
-# --- 6. EXECUTAR TESTES DE VALIDAÇÃO (Sem a flag --url para simular o loop) ---
-echo "Passo 5: Executando validação de saude do serviÃ§o $ENVIRONMENT..."
-# Este comando ficará em loop, conforme sua instrução.
-minikube kubectl -- service "$APP_NAME"-service-"$ENVIRONMENT" --namespace="$ENVIRONMENT"
+# --- 5. EXECUTAR TESTES DE VALIDAÇÃO ---
+echo "Passo 5: Executando validação de saúde do serviço $ENVIRONMENT..."
+SERVICE_URL=$(minikube kubectl -- service "$APP_NAME"-service-"$ENVIRONMENT" --namespace="$ENVIRONMENT" --url)
 
-# Se o script chegar até aqui, é porque algo está errado
+if curl --fail --silent "$SERVICE_URL/hello"; then
+  echo "Validação de saúde do serviço $ENVIRONMENT: SUCESSO!"
+else
+  echo "Validação de saúde do serviço $ENVIRONMENT: FALHA!"
+  exit 1
+fi
+
 echo "=================================================="
-echo "          ERRO NA LÓGICA DE LOOP!                 "
+echo "          PIPELINE CONCLUÍDA COM SUCESSO!         "
 echo "=================================================="
