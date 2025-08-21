@@ -1,21 +1,17 @@
 pipeline {
     agent any
+    parameters {
+        choice(name: 'AMBIENTE_ALVO', choices: ['des', 'prd'], description: 'Selecione o ambiente de deploy')
+    }
     stages {
         stage('CI/CD Pipeline') {
             steps {
-                echo 'Limpando o workspace para garantir um ambiente limpo...'
-                cleanWs()
-                
-                script {
-                    def targetEnvironment = 'des' // Valor padrão para a branch de dev
-                    if (env.BRANCH_NAME == 'main') {
-                        targetEnvironment = 'prd'
-                    }
 
-                    echo "Iniciando a pipeline para o ambiente: ${targetEnvironment}"
+                script {
+                    echo "Iniciando a pipeline para o ambiente: ${params.AMBIENTE_ALVO}"
                     dir('getting-started') {
-                        // Passa o ambiente como argumento para o script
-                        sh "./pipeline.sh ${targetEnvironment}"
+                        checkout scm
+                        sh "./pipeline.sh ${params.AMBIENTE_ALVO}"
                     }
                 }
             }
