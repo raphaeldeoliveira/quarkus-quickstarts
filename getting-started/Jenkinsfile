@@ -10,12 +10,11 @@ pipeline {
                     } else if (env.BRANCH_NAME == 'dev') {
                         ambiente = 'des'
                     } else {
-                        // Se não for 'main' ou 'dev', a pipeline não rodará.
                         echo "Branch ${env.BRANCH_NAME} não tem pipeline configurada. Ignorando."
                         return
                     }
 
-                    echo "Iniciando pipeline para o ambiente: ${ambiente}"
+                    echo "Iniciando a pipeline para o ambiente: ${ambiente}"
                     dir('getting-started') {
                         sh "./pipeline.sh ${ambiente}"
                     }
