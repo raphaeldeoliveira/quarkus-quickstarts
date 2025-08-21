@@ -9,6 +9,7 @@ pipeline {
                 script {
                     echo "Iniciando a pipeline para o ambiente: ${params.AMBIENTE_ALVO}"
                     dir('getting-started') {
+                        checkout scm
                         sh "./pipeline.sh ${params.AMBIENTE_ALVO}"
                     }
                 }
