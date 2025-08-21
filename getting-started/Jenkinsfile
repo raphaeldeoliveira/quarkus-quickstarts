@@ -1,17 +1,21 @@
 pipeline {
     agent any
-    parameters {
-        choice(name: 'AMBIENTE_ALVO', choices: ['des', 'prd'], description: 'Selecione o ambiente de deploy')
-    }
     stages {
-        stage('CI/CD Pipeline') {
+        stage('Executar Pipeline Condicional') {
             steps {
-
                 script {
-                    echo "Iniciando a pipeline para o ambiente: ${params.AMBIENTE_ALVO}"
-                    dir('getting-started') {
-                        checkout scm
-                        sh "./pipeline.sh ${params.AMBIENTE_ALVO}"
+                    if (env.BRANCH_NAME == 'dev') {
+                        echo "Detectada branch 'dev'. Executando pipeline para o ambiente de Desenvolvimento (DES)."
+                        dir('getting-started') {
+                            sh './pipeline-dev.sh'
+                        }
+                    } else if (env.BRANCH_NAME == 'main') {
+                        echo "Detectada branch 'main'. Executando pipeline para o ambiente de Produção (PRD)."
+                        dir('getting-started') {
+                            sh './pipeline-prd.sh'
+                        }
+                    } else {
+                        echo "Branch ${env.BRANCH_NAME} não tem pipeline configurada. Ignorando."
                     }
                 }
             }
