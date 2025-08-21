@@ -3,10 +3,22 @@ pipeline {
     stages {
         stage('Executar Pipeline Completa') {
             steps {
-                echo 'Iniciando o script de automacao...'
-                // O Jenkins agora entrará no diretório do projeto antes de rodar o script
-                dir('getting-started') {
-                    sh './pipeline.sh'
+                script {
+                    def ambiente = ''
+                    if (env.BRANCH_NAME == 'main') {
+                        ambiente = 'prd'
+                    } else if (env.BRANCH_NAME == 'dev') {
+                        ambiente = 'des'
+                    } else {
+                        // Se não for 'main' ou 'dev', a pipeline não rodará.
+                        echo "Branch ${env.BRANCH_NAME} não tem pipeline configurada. Ignorando."
+                        return
+                    }
+
+                    echo "Iniciando pipeline para o ambiente: ${ambiente}"
+                    dir('getting-started') {
+                        sh "./pipeline.sh ${ambiente}"
+                    }
                 }
             }
         }
